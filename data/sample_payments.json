@@ -1,0 +1,15 @@
+{
+  "company": "Lumen Labs",
+  "note": "All companies, people, and amounts are made up.",
+  "payments": [
+    {"id": "p1", "rail": "ACH payout", "counterparty": "Northwind Studio", "amount": 8400, "code": "R03", "date": "Nov 2", "trace": "Sent Oct 30", "retries": 0},
+    {"id": "p2", "rail": "ACH funding pull", "counterparty": "your external bank (••4821)", "label": "External bank ••4821", "amount": 40000, "code": "R29", "date": "Nov 2", "trace": "Started Oct 30", "retries": 0},
+    {"id": "p3", "rail": "Card ••7720", "cardholder": "Priya", "counterparty": "Cloudbase", "amount": 1240.18, "code": "LIMIT", "date": "Nov 3", "trace": "Today", "retries": 0},
+    {"id": "p4", "rail": "ACH payout", "counterparty": "Kestrel Payroll Services", "amount": 2150, "code": "R02", "date": "Nov 1", "trace": "Sent Oct 29", "retries": 0},
+    {"id": "p5", "rail": "ACH funding pull", "counterparty": "your external bank (••0913)", "label": "External bank ••0913", "amount": 15000, "code": "R01", "date": "Oct 31", "trace": "Started Oct 28", "retries": 1},
+    {"id": "p6", "rail": "Card ••3104", "cardholder": "Marco", "counterparty": "SkyFare Airlines", "amount": 612.40, "code": "INTL", "date": "Nov 3", "trace": "Today", "retries": 0},
+    {"id": "p9", "rail": "Card ••5512", "cardholder": "Dana", "counterparty": "Vexa Electronics", "amount": 2899.00, "code": "FRAUD", "date": "Nov 3", "trace": "Today", "retries": 0},
+    {"id": "p7", "rail": "Scheduled ACH payout", "counterparty": "Larkin Legal LLP", "amount": 5000, "code": "BDCHANGE", "date": "Due Nov 6", "trace": "Scheduled", "retries": 0},
+    {"id": "p8", "rail": "Payout batch, 9 payments", "counterparty": "Friday batch", "amount": 61300, "code": "BALANCE", "date": "Due Nov 6", "trace": "Scheduled", "retries": 0}
+  ]
+}

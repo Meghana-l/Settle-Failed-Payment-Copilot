@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Settle: a failed-payment copilot for business banking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F6F8; --surface:#FFFFFF; --ink:#13233A; --muted:#55657A; --rule:#D5DDE5;
+  --navy:#1B3A5C; --settled:#1E7A55; --settled-bg:#E4F2EB; --returned:#9A5410; --returned-bg:#FBEEDD;
+  --declined:#A8231C; --declined-bg:#FBE6E4; --focus:#2D6CDF; --chip:#EAF0F5;
+  color-scheme:light;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1722; --surface:#172231; --ink:#E6EDF5; --muted:#9AA9BC; --rule:#2B3A4D;
+    --navy:#8FB4DD; --settled:#5CC596; --settled-bg:#173A2C; --returned:#E7A25A; --returned-bg:#3A2A17;
+    --declined:#F08A82; --declined-bg:#3F1D1B; --focus:#7AA7FF; --chip:#1F2D3F; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1722; --surface:#172231; --ink:#E6EDF5; --muted:#9AA9BC; --rule:#2B3A4D;
+  --navy:#8FB4DD; --settled:#5CC596; --settled-bg:#173A2C; --returned:#E7A25A; --returned-bg:#3A2A17;
+  --declined:#F08A82; --declined-bg:#3F1D1B; --focus:#7AA7FF; --chip:#1F2D3F; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.55;font-variant-numeric:tabular-nums}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+a{color:var(--navy)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--rule)}
+.top-in{max-width:1120px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{font-weight:800;font-size:20px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.brand svg{flex:none}
+.tabs{margin-left:auto;display:flex;background:var(--chip);border-radius:999px;padding:3px}
+.tabs a{text-decoration:none;color:var(--muted);font-weight:600;font-size:14px;padding:7px 16px;border-radius:999px}
+.tabs a[aria-current="page"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(19,35,58,.12)}
+main{max-width:1120px;margin:0 auto;padding:28px 20px 64px}
+.view{display:none}.view.on{display:block}
+.note{font-size:13px;color:var(--muted)}
+
+/* ---------- CASE STUDY ---------- */
+.hero{display:grid;grid-template-columns:1.05fr 1fr;gap:36px;align-items:center;padding:20px 0 36px;border-bottom:1px solid var(--rule)}
+.hero h1{font-size:clamp(30px,4.4vw,48px);line-height:1.08;letter-spacing:-.03em;margin:0 0 16px;font-weight:800}
+.hero p{font-size:18px;color:var(--muted);margin:0 0 20px;max-width:34em}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--navy);background:var(--navy);color:var(--surface);font:inherit;font-weight:600;font-size:15px;padding:10px 18px;border-radius:8px;cursor:pointer;text-decoration:none}
+.btn.ghost{background:transparent;color:var(--navy)}
+.btn:disabled{opacity:.55;cursor:default}
+.compare{display:grid;gap:10px}
+.slip{border:1px solid var(--rule);border-radius:10px;padding:14px 16px;background:var(--surface)}
+.slip.raw{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:var(--muted);line-height:1.6;background:var(--bg)}
+.slip.raw b{color:var(--ink)}
+.slip.clear h3{margin:0 0 4px;font-size:17px}
+.slip.clear p{margin:0 0 10px;font-size:15px;color:var(--muted)}
+.arrow{justify-self:center;color:var(--muted);font-size:13px;font-weight:600}
+.cs{display:grid;grid-template-columns:220px 1fr;gap:40px;padding-top:36px}
+.toc{position:sticky;top:90px;align-self:start;font-size:14px}
+.toc a{display:block;color:var(--muted);text-decoration:none;padding:5px 0;border-left:2px solid var(--rule);padding-left:12px}
+.toc a:hover{color:var(--ink);border-color:var(--navy)}
+.cs section{max-width:68ch;margin-bottom:40px}
+.cs h2{font-size:24px;letter-spacing:-.02em;margin:0 0 12px}
+.cs h3{font-size:17px;margin:20px 0 6px}
+.cs p,.cs li{color:var(--ink)}
+.cs ul{padding-left:20px;margin:8px 0}
+.cs li{margin-bottom:6px}
+.scqa{display:grid;grid-template-columns:120px 1fr;border-top:1px solid var(--rule)}
+.scqa div{padding:12px 0;border-bottom:1px solid var(--rule)}
+.scqa div:nth-child(odd){font-weight:700;color:var(--navy)}
+.tbl{overflow-x:auto;margin:12px 0;border:1px solid var(--rule);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:560px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:700;background:var(--chip)}
+tr:last-child td{border-bottom:0}
+.metric{display:grid;grid-template-columns:1fr auto;gap:4px 16px;padding:12px 0;border-bottom:1px solid var(--rule)}
+.metric b{font-size:15px}.metric span{color:var(--muted);font-size:14px;grid-column:1/-1}
+.metric em{font-style:normal;font-weight:700;color:var(--settled);font-size:14px}
+
+/* ---------- PROTOTYPE ---------- */
+.pt-head{display:flex;flex-wrap:wrap;align-items:end;gap:16px;margin-bottom:18px}
+.pt-head h1{font-size:28px;letter-spacing:-.02em;margin:0}
+.pt-head p{margin:2px 0 0;color:var(--muted)}
+.summary{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap}
+.sum{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:8px 14px;font-size:13px;color:var(--muted)}
+.sum b{display:block;font-size:20px;color:var(--ink)}
+.app{display:grid;grid-template-columns:360px 1fr;gap:16px;align-items:start}
+.list{background:var(--surface);border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+.list h2{font-size:13px;font-weight:700;color:var(--muted);margin:0;padding:12px 16px;background:var(--chip);border-bottom:1px solid var(--rule)}
+.item{display:grid;grid-template-columns:1fr auto;gap:2px 10px;width:100%;text-align:left;font:inherit;color:inherit;background:none;border:0;border-bottom:1px solid var(--rule);padding:12px 16px;cursor:pointer}
+.item:hover{background:var(--bg)}
+.item[aria-selected="true"]{background:var(--bg);box-shadow:inset 3px 0 0 var(--navy)}
+.item .who{font-weight:600}
+.item .amt{font-weight:700;text-align:right}
+.item .meta{font-size:13px;color:var(--muted)}
+.pill{justify-self:end;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px}
+.pill.returned{background:var(--returned-bg);color:var(--returned)}
+.pill.declined{background:var(--declined-bg);color:var(--declined)}
+.pill.risk{background:var(--chip);color:var(--navy)}
+.detail{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:22px 24px}
+.d-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:start}
+.d-top h2{margin:0;font-size:22px;letter-spacing:-.02em}
+.d-top .sub{color:var(--muted);font-size:14px}
+.d-amt{font-size:26px;font-weight:800}
+.track{display:flex;margin:20px 0 6px;list-style:none;padding:0}
+.track li{flex:1;position:relative;padding-top:18px;font-size:12px;color:var(--muted)}
+.track li::before{content:"";position:absolute;top:5px;left:0;right:0;height:2px;background:var(--rule)}
+.track li::after{content:"";position:absolute;top:0;left:0;width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--rule)}
+.track li.done::before,.track li.done::after{background:var(--settled);border-color:var(--settled)}
+.track li.fail::after{background:var(--declined);border-color:var(--declined)}
+.track li.fail{color:var(--declined);font-weight:700}
+.track li:last-child::before{right:auto;width:0}
+.plain{font-size:19px;line-height:1.45;margin:18px 0 6px;font-weight:600}
+.code{font-size:13px;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+.box{border:1px solid var(--rule);border-radius:10px;padding:14px 16px}
+.box h3{margin:0 0 8px;font-size:14px;color:var(--muted);font-weight:700}
+.box ol{margin:0;padding-left:20px}.box li{margin-bottom:6px}
+.actor{font-size:18px;font-weight:700}
+.warn{margin-top:14px;border-left:3px solid var(--returned);background:var(--returned-bg);padding:10px 14px;border-radius:0 8px 8px 0;font-size:14px}
+.draft{margin-top:18px;border-top:1px solid var(--rule);padding-top:16px}
+.draft-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+textarea{width:100%;min-height:150px;margin-top:12px;font:inherit;font-size:15px;color:var(--ink);background:var(--bg);border:1px solid var(--rule);border-radius:8px;padding:12px;resize:vertical}
+.status{font-size:13px;color:var(--muted)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+footer{max-width:1120px;margin:0 auto;padding:0 20px 40px;font-size:13px;color:var(--muted)}
+@media (max-width:880px){
+  .hero,.cs,.app{grid-template-columns:1fr}
+  .toc{display:none}
+  .grid2{grid-template-columns:1fr}
+  .summary{margin-left:0}
+}
+
+/* ---------- INSIGHTS ---------- */
+.ins{display:grid;gap:20px}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:22px 24px}
+.card h2{margin:0 0 4px;font-size:22px;letter-spacing:-.02em}
+.card .lede{margin:0 0 18px;color:var(--muted)}
+.bars{display:grid;gap:10px}
+.bar{display:grid;grid-template-columns:160px 1fr 40px;align-items:center;gap:12px;width:100%;font:inherit;color:inherit;background:none;border:0;padding:6px 8px;border-radius:8px;cursor:pointer;text-align:left}
+.bar:hover,.bar[aria-pressed="true"]{background:var(--bg)}
+.bar .lbl{font-weight:600}
+.bar .track2{display:block;height:22px;background:var(--chip);border-radius:6px;overflow:hidden}
+.bar .fill{display:block;height:100%;border-radius:6px;transition:width .5s ease}
+.bar .n{font-weight:800;text-align:right}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;min-height:34px}
+.chipx{background:var(--chip);border-radius:999px;padding:5px 12px;font-size:14px}
+.hint{font-size:13px;color:var(--muted);margin-top:10px}
+.split{display:flex;height:44px;border-radius:10px;overflow:hidden;margin:6px 0 10px}
+.split button{border:0;font:inherit;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:filter .15s}
+.split button:hover{filter:brightness(1.08)}
+.split button[aria-pressed="true"]{box-shadow:inset 0 -4px 0 rgba(0,0,0,.25)}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.stages{display:grid;grid-template-columns:repeat(5,1fr);gap:0;list-style:none;padding:0;margin:8px 0 0}
+.stages button{width:100%;font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:30px 6px 8px;position:relative;text-align:center;font-weight:600;font-size:14px;border-radius:8px}
+.stages button::before{content:"";position:absolute;top:12px;left:0;right:0;height:3px;background:var(--rule)}
+.stages li:first-child button::before{left:50%}.stages li:last-child button::before{right:50%}
+.stages button::after{content:"";position:absolute;top:5px;left:calc(50% - 9px);width:18px;height:18px;border-radius:50%;background:var(--surface);border:3px solid var(--navy)}
+.stages button.bad::after{border-color:var(--declined)}
+.stages button[aria-pressed="true"]{background:var(--bg)}
+.stages button[aria-pressed="true"]::after{background:var(--navy)}
+.stages button.bad[aria-pressed="true"]::after{background:var(--declined)}
+.stage-panel{margin-top:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:stretch}
+.step{border:1px solid var(--rule);border-radius:10px;padding:14px;position:relative;font-size:14px}
+.step b{display:block;font-size:15px;margin-bottom:4px}
+.step.ai{border-color:var(--navy);background:var(--chip)}
+.step.human{border-color:var(--settled);background:var(--settled-bg)}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;margin-bottom:8px;background:var(--bg);color:var(--muted)}
+.step.ai .tag{background:var(--surface);color:var(--navy)}
+.step.human .tag{background:var(--surface);color:var(--settled)}
+@media (max-width:880px){
+  .bar{grid-template-columns:110px 1fr 32px}
+  .stages{grid-template-columns:1fr}
+  .stages button{padding:10px 10px 10px 40px;text-align:left}
+  .stages button::before{display:none}
+  .stages button::after{top:calc(50% - 9px);left:10px}
+  .stage-panel,.flow{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in">
+  <div class="brand"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6.5 11.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Settle</div>
+  <nav class="tabs" aria-label="Views"><a href="#case" data-v="case">Case study</a><a href="#prototype" data-v="prototype">Prototype</a><a href="#insights" data-v="insights">Insights</a></nav>
+</div></header>
+
+<main>
+<!-- ================= CASE STUDY ================= -->
+<div class="view" id="v-case">
+  <div class="hero">
+    <div>
+      <h1>When a payment fails, a founder should know what to do in under a minute.</h1>
+      <p>Money moves, cards get declined, and payments either settle or fail. Settle focuses on the moment a payment fails, when a bank transfer comes back or a card is declined, and turns it into a plain-English explanation plus a one-click fix. Finance teams also see which payments are at risk of failing before they go out.</p>
+      <a class="btn" href="#prototype">Try the prototype</a> <a class="btn ghost" href="#insights">See the insights</a>
+    </div>
+    <div class="compare" aria-label="Before and after example">
+      <div class="arrow">What the bank sends</div>
+      <div class="slip raw">ACH RETURN NOTICE<br>Entry: CCD credit<br>Amount: <b>8,400.00</b><br>Return reason: <b>R03</b><br>Trace: 0210000210004417<br>Status: RETURNED</div>
+      <div class="arrow">What Settle shows instead</div>
+      <div class="slip clear">
+        <h3>Your $8,400 payment to Northwind Studio came back.</h3>
+        <p>Their bank couldn’t find an account with that number. Your money is back in your account. Ask Northwind to confirm their details. Here’s a message ready to send.</p>
+        <span class="pill returned">Your vendor needs to act</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="cs">
+    <nav class="toc" aria-label="Case study sections">
+      <a href="#s-answer">The answer first</a><a href="#s-users">Who it’s for</a><a href="#s-metrics">Success, defined first</a>
+      <a href="#s-scope">What v1 does</a><a href="#s-edges">Edge cases</a><a href="#s-compliance">Compliance and Ops</a>
+      <a href="#s-ai">Where AI fits</a><a href="#s-validate">How I’d validate it</a><a href="#s-open">Open questions</a>
+    </nav>
+    <div>
+      <section id="s-answer">
+        <h2>The answer first</h2>
+        <div class="scqa">
+          <div>Situation</div><div>Startups pay vendors, move money between accounts, and spend on company cards from one banking platform. Most bank-to-bank payments in the US travel over ACH, the network banks use to send money between accounts. Most of them go through without anyone noticing.</div>
+          <div>Complication</div><div>When an ACH payment fails, the bank sends back a return code. For example, R03 means the receiving bank couldn’t find the account. Card failures come back as a short decline message. The founder doesn’t know what the code means, who has to fix it, or whether trying again makes it worse. So they open a support ticket, and a vendor or employee waits.</div>
+          <div>Question</div><div>How do we make a failed payment something a customer can fix on their own, fast, without losing trust in where their money is?</div>
+          <div>Answer</div><div>Explain every failure in plain English, name who acts, give the next step in one click, and catch the predictable failures before money leaves the account.</div>
+        </div>
+      </section>
+
+      <section id="s-users">
+        <h2>Who it’s for</h2>
+        <p><b>The founder who pays the bills.</b> Early-stage, no finance team, pays vendors and contractors from the same account. Wants to know if money is safe and what to do next.</p>
+        <p><b>The finance lead or fractional controller.</b> Runs payouts in batches and closes the books. Cares about which payments will settle on time and which need a retry before month-end.</p>
+      </section>
+
+      <section id="s-metrics">
+        <h2>Success, defined before building</h2>
+        <div class="metric"><b>Median time from failure to fix</b><em>Primary</em><span>From the moment a return or decline posts to the moment the customer resends, edits details, or contacts the vendor.</span></div>
+        <div class="metric"><b>Repeat-failure rate on retried payments</b><em>Secondary</em><span>Retries that fail again for the same reason. If this goes up, the guidance is wrong.</span></div>
+        <div class="metric"><b>Failed-payment support tickets per 1,000 payments</b><em>Secondary</em><span>The cost signal for Ops. Should fall without customers going quiet on real problems.</span></div>
+        <div class="metric"><b>Payouts sent after a bank-details warning</b><em>Guardrail</em><span>Pre-flight warnings must not be ignored by habit. Track the false-positive rate so warnings stay rare and believable.</span></div>
+      </section>
+
+      <section id="s-scope">
+        <h2>What v1 does, and what it doesn’t</h2>
+        <h3>In</h3>
+        <ul>
+          <li>Plain-English explanations for the most common ways a payment fails: the vendor’s account is closed, can’t be found, is frozen, or can’t take transfers; your other bank is low on funds or blocked the transfer; and common card declines.</li>
+          <li>A clear owner on every failure: you, your vendor, your other bank, or support.</li>
+          <li>One next step per failure, including a drafted message to the vendor or bank.</li>
+          <li>Pre-flight checks on scheduled payouts: changed bank details, first payment to a new vendor, and a balance that won’t cover the batch.</li>
+        </ul>
+        <h3>Out</h3>
+        <ul>
+          <li>Automatic retries. A person approves every resend.</li>
+          <li>Consumer accounts and consumer return rules.</li>
+          <li>Any change to how payments are routed or settled.</li>
+        </ul>
+      </section>
+
+      <section id="s-edges">
+        <h2>Edge cases, because each one is someone’s money</h2>
+        <div class="tbl"><table>
+          <thead><tr><th>Case</th><th>What could go wrong</th><th>How Settle handles it</th></tr></thead>
+          <tbody>
+            <tr><td>Retrying a transfer in from your other bank that failed for lack of funds (code R01)</td><td>Too many retries break the network’s rules</td><td>Shows retries left; the rules allow at most two retries within 180 days</td></tr>
+            <tr><td>Vendor sends “new” bank details by email</td><td>A scammer posing as the vendor gets the money</td><td>Flags the change, asks the customer to confirm by phone using a number they already have</td></tr>
+            <tr><td>Customer resends an “account not found” payment with the same details</td><td>Same failure, days lost</td><td>Blocks resend until the account number is edited</td></tr>
+            <tr><td>Two people retry the same payment</td><td>Vendor gets paid twice</td><td>One open retry per payment; second person sees who already resent it</td></tr>
+            <tr><td>Return arrives after the books are closed</td><td>Reconciliation breaks</td><td>Tags the original and the reversal so they match in the export</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section id="s-compliance">
+        <h2>Bringing Compliance and Ops in early</h2>
+        <ul>
+          <li><b>Compliance</b> reviews the explanation copy before launch, since it describes why money moved and must not imply fault or give legal advice. Also signs off on retry limits.</li>
+          <li><b>Risk and fraud</b> own the rules for the bank-details warning, so the pre-flight check matches what they already watch for.</li>
+          <li><b>Support and Ops</b> get the same explanations in their tools, so a customer who still writes in hears the same answer.</li>
+        </ul>
+      </section>
+
+      <section id="s-ai">
+        <h2>Where AI fits, and where it doesn’t</h2>
+        <p>The reason for a failure comes from a fixed library mapped to each return code and decline reason. It never comes from a model, because a wrong explanation about money is worse than a slow one.</p>
+        <p>AI does the writing around that fact: drafting the message to a vendor or bank in the customer’s voice, and in a full version, grouping support tickets about failed payments to find the next codes worth covering. AI never moves money or triggers a retry.</p>
+      </section>
+
+      <section id="s-validate">
+        <h2>How I’d validate it</h2>
+        <ul>
+          <li>Five short conversations with founders and finance leads about the last payment that failed on them, and what they did next.</li>
+          <li>Tag a month of failed-payment support tickets by code, to confirm which six or seven reasons cover most of the volume.</li>
+          <li>Launch to a small group, compare time-to-fix and ticket rate against customers without Settle, then decide whether to expand the code library or the pre-flight checks.</li>
+        </ul>
+      </section>
+
+      <section id="s-open">
+        <h2>Open questions</h2>
+        <ul>
+          <li>Should the vendor get a link to update their own bank details, and what verification would that need?</li>
+          <li>Which pre-flight warning has the best signal-to-noise for a two-person startup?</li>
+          <li>Does a finance lead want this per payment, or as one daily digest?</li>
+        </ul>
+        <p class="note">Concept prototype by Meghana Lakshminarayana Swamy. Not affiliated with or endorsed by any bank. All payments, names, and amounts are made up.</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- ================= PROTOTYPE ================= -->
+<div class="view" id="v-prototype">
+  <div class="pt-head">
+    <div><h1>Payments that need you</h1><p>Sample company: Lumen Labs. All data is made up.</p></div>
+    <div class="summary" id="summary"></div>
+  </div>
+  <div class="app">
+    <div class="list" id="list" role="listbox" aria-label="Failed and at-risk payments"></div>
+    <div class="detail" id="detail" aria-live="polite"></div>
+  </div>
+</div>
+
+<!-- ================= INSIGHTS ================= -->
+<div class="view" id="v-insights">
+  <div class="pt-head"><div><h1>What the 13 failure types tell us</h1><p>Settle covers 13 ways a payment can fail. These charts group them so the pattern is easy to see. Click any bar or stage.</p></div></div>
+  <div class="ins">
+    <section class="card">
+      <h2 id="who-h">Who has to act when a payment fails</h2>
+      <p class="lede" id="who-lede"></p>
+      <div class="bars" id="who-bars"></div>
+      <div class="chips" id="who-chips"></div>
+      <div class="hint">This is why Settle drafts the message for you: when the fix sits with someone else, the fastest path is a clear ask.</div>
+    </section>
+
+    <section class="card">
+      <h2>What happens if you just hit retry</h2>
+      <p class="lede" id="retry-lede"></p>
+      <div class="split" id="retry-split"></div>
+      <div class="legend"><span><i style="background:var(--declined)"></i>Fails again unless something changes</span><span><i style="background:var(--settled)"></i>Safe to retry once you act</span></div>
+      <div class="chips" id="retry-chips"></div>
+      <div class="hint">Settle locks resend on the red group until the cause is fixed, so customers don’t lose days on a retry that can’t work.</div>
+    </section>
+
+    <section class="card">
+      <h2>Where a payment can fail</h2>
+      <p class="lede">The life of a vendor payment, from scheduling to settled. Click a stage.</p>
+      <ol class="stages" id="stages"></ol>
+      <div class="stage-panel" id="stage-panel"></div>
+    </section>
+
+    <section class="card">
+      <h2>How Settle decides what to show</h2>
+      <p class="lede">Facts come from a fixed library. AI only helps with the writing, and a person approves everything.</p>
+      <div class="flow">
+        <div class="step"><span class="tag">Bank</span><b>A payment fails</b>An ACH return code or card decline comes back.</div>
+        <div class="step"><span class="tag">Rules</span><b>Look up the reason</b>A fixed, reviewed list matches the code to a plain reason, who acts, and the fix.</div>
+        <div class="step"><span class="tag">Customer</span><b>See it in plain English</b>Reason, owner, steps, and retry limits in one place.</div>
+        <div class="step ai"><span class="tag">AI</span><b>Draft the message</b>Writes the ask to the vendor or bank using only those facts.</div>
+        <div class="step human"><span class="tag">Person</span><b>Review and send</b>Nothing is sent or retried without a person. AI never moves money.</div>
+      </div>
+    </section>
+  </div>
+</div>
+</main>
+<footer>Settle is a concept prototype. All data is made up. Return codes follow the rules of NACHA, the organization that runs the ACH network; card decline reasons are simplified.</footer>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const $ = s=>document.querySelector(s);
+const money = n=>"$"+n.toLocaleString("en-US",{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2});
+let DATA=null, sel="p1";
+
+async function load(){
+  try{
+    const r = await fetch("/api/payments"); if(!r.ok) throw new Error(r.status);
+    DATA = await r.json(); render();
+  }catch(e){
+    $("#detail").innerHTML = `<p class="plain">Couldn’t load payments.</p><p class="code">Refresh the page to try again.</p>`;
+  }
+}
+const kindPill = p=>p.kind==="ach_return"?'<span class="pill returned">Returned</span>':p.kind==="card_decline"?'<span class="pill declined">Declined</span>':'<span class="pill risk">At risk</span>';
+
+function renderSummary(){
+  const s=DATA.summary;
+  $("#summary").innerHTML=`<div class="sum"><b>${s.failed}</b>failed this week</div><div class="sum"><b>${s.you_can_fix}</b>you can fix now</div><div class="sum"><b>${s.flagged_before_sending}</b>flagged before sending</div>`;
+}
+function renderList(){
+  const P=DATA.payments, groups=[["Failed",P.filter(p=>p.kind!=="preflight")],["Caught before sending",P.filter(p=>p.kind==="preflight")]];
+  $("#list").innerHTML = groups.map(([t,arr])=>`<h2>${t}</h2>`+arr.map(p=>`
+    <button class="item" role="option" aria-selected="${p.id===sel}" data-id="${p.id}">
+      <span class="who">${p.label||p.counterparty}</span><span class="amt">${money(p.amount)}</span>
+      <span class="meta">${p.rail}${p.cardholder?", "+p.cardholder:""} · ${p.date}</span>${kindPill(p)}
+    </button>`).join("")).join("");
+  document.querySelectorAll(".item").forEach(b=>b.onclick=()=>{sel=b.dataset.id;render();if(innerWidth<880)$("#detail").scrollIntoView({behavior:"smooth"})});
+}
+function track(p){
+  if(p.kind==="preflight") return `<ol class="track"><li class="done">Scheduled</li><li class="fail">Needs review</li><li>Sends</li><li>Settles</li></ol>`;
+  if(p.kind==="card_decline") return `<ol class="track"><li class="done">Card used</li><li class="fail">Declined</li><li>Retry</li><li>Approved</li></ol>`;
+  return `<ol class="track"><li class="done">${p.rail.endsWith("pull")?"Started":"Sent"}</li><li class="done">At the other bank</li><li class="fail">Returned (${p.code})</li><li>Settled</li></ol>`;
+}
+const FIX={edit:"Edit payee details",retry:"Retry transfer",limit:"Update card settings",confirm:"I confirmed by phone",message:"Mark as handled"};
+const needsMessage = p=>["Your vendor","Your other bank","Your cardholder"].includes(p.actor);
+
+function render(){
+  renderSummary(); renderList();
+  const p = DATA.payments.find(x=>x.id===sel);
+  const disabled = p.fix==="retry" && p.retries_left===0;
+  $("#detail").innerHTML = `
+    <div class="d-top"><div><h2>${p.title}</h2><div class="sub">${p.label||p.counterparty} · ${p.rail} · ${p.trace}</div></div><div class="d-amt">${money(p.amount)}</div></div>
+    ${track(p)}
+    <p class="plain">${p.plain}</p>
+    <div class="code">${p.status_note}</div>
+    <div class="grid2">
+      <div class="box"><h3>Who needs to act</h3><div class="actor">${p.actor}</div></div>
+      <div class="box"><h3>What to do</h3><ol>${p.steps.map(s=>`<li>${s}</li>`).join("")}</ol></div>
+    </div>
+    <div class="warn">${p.retry_note}</div>
+    <div class="actions"><button class="btn" id="fix" ${disabled?"disabled":""}>${FIX[p.fix]}</button></div>
+    ${needsMessage(p)?`<div class="draft">
+      <div class="draft-row"><button class="btn ghost" id="ai">Draft a message with AI</button><span class="status" id="aist">Uses only the facts above. You review before sending.</span></div>
+      <textarea id="msg" aria-label="Message draft" placeholder="Your message will appear here."></textarea>
+      <div class="actions"><button class="btn ghost" id="copy">Copy message</button></div>
+    </div>`:""}`;
+  $("#fix").onclick=()=>handleFix(p);
+  if(needsMessage(p)){ $("#ai").onclick=()=>draft(p); $("#copy").onclick=()=>navigator.clipboard?.writeText($("#msg").value).then(()=>toast("Message copied"),()=>toast("Select the text to copy it")); }
+}
+async function handleFix(p){
+  if(p.fix==="retry"){
+    const r = await fetch(`/api/payments/${p.id}/retry`,{method:"POST"});
+    if(!r.ok){ toast((await r.json()).detail||"Retry not allowed"); return; }
+    const u = await r.json(); Object.assign(p,u);
+    toast(`Retry started. ${u.retries_left} retr${u.retries_left===1?"y":"ies"} left.`); render(); return;
+  }
+  const msgs={edit:"Payee editor would open here. Resend unlocks after the details change.",limit:"Card settings updated. The cardholder can retry now.",confirm:"Confirmed. Payment released.",message:"Marked as handled."};
+  toast(msgs[p.fix]);
+}
+async function draft(p){
+  const st=$("#aist"), box=$("#msg"); st.textContent="Drafting…"; $("#ai").disabled=true;
+  try{
+    const r = await (await fetch(`/api/payments/${p.id}/draft`,{method:"POST"})).json();
+    box.value=r.text; st.textContent=r.note;
+  }catch(e){ st.textContent="Couldn’t create a draft. Try again."; }
+  $("#ai").disabled=false;
+}
+
+// ---------- INSIGHTS ----------
+let REASONS=null;
+const GROUPS=[["You","You",r=>r.actor==="You"||r.actor.startsWith("You (")],["Your vendor","Your vendor",r=>r.actor==="Your vendor"],["Your other bank","Your other bank",r=>r.actor==="Your other bank"],["Your cardholder","Your cardholder",r=>r.actor==="Your cardholder"]];
+const STAGES=[
+  {name:"Scheduled",bad:false,happens:"You set up a vendor payment or a payout batch.",wrong:"Bank details changed recently; the batch is bigger than your balance.",settle:"Pre-flight checks flag both before any money moves."},
+  {name:"Sent",bad:false,happens:"The payment leaves your account and enters the ACH network.",wrong:"Nothing visible yet. This is the waiting part.",settle:"Shows that the payment is on its way, so nobody chases it early."},
+  {name:"At the other bank",bad:false,happens:"The receiving bank checks the account it’s being paid into.",wrong:"Account closed, number not found, account frozen, or can’t take transfers.",settle:"Turns each of these into a plain reason the moment it comes back."},
+  {name:"Returned",bad:true,happens:"The money comes back to you, usually within 2 banking days.",wrong:"Founders see a short code, like R03 (“no account found”), and don’t know who should fix it.",settle:"Names who acts, gives the fix, and drafts the message."},
+  {name:"Settled",bad:false,happens:"The vendor has the money.",wrong:"Nothing. This is where every payment should end up.",settle:"The goal: get here faster after a failure."}
+];
+let stageSel=3, whoSel=null, retrySel=null;
+async function loadReasons(){
+  try{ const r=await fetch("/api/reasons"); if(!r.ok) throw 0; REASONS=await r.json(); renderInsights(); }
+  catch(e){ $("#who-lede").textContent="Couldn’t load the data. Refresh the page to try again."; }
+}
+function chips(list){ return list.map(r=>`<span class="chipx">${r.title}</span>`).join(""); }
+function renderInsights(){
+  if(!REASONS) return;
+  const total=REASONS.length, counts=GROUPS.map(([k,l,f])=>({k,l,items:REASONS.filter(f)})), max=Math.max(...counts.map(c=>c.items.length));
+  const others=total-counts[0].items.length;
+  $("#who-lede").textContent=`${others} of ${total} failures need someone other than you to fix them.`;
+  const colors={"You":"var(--navy)","Your vendor":"var(--returned)","Your other bank":"var(--returned)","Your cardholder":"var(--returned)"};
+  $("#who-bars").innerHTML=counts.map(c=>`<button class="bar" aria-pressed="${whoSel===c.k}" data-k="${c.k}"><span class="lbl">${c.l}</span><span class="track2"><span class="fill" style="width:${c.items.length/max*100}%;background:${colors[c.k]}"></span></span><span class="n">${c.items.length}</span></button>`).join("");
+  document.querySelectorAll("#who-bars .bar").forEach(b=>b.onclick=()=>{whoSel=whoSel===b.dataset.k?null:b.dataset.k;renderInsights();});
+  $("#who-chips").innerHTML = whoSel?chips(counts.find(c=>c.k===whoSel).items):'<span class="hint">Click a bar to see the reasons.</span>';
+  const blocked=REASONS.filter(r=>r.resend_blocked), ok=REASONS.filter(r=>!r.resend_blocked);
+  $("#retry-lede").textContent=`${blocked.length} of ${total} failures will fail again if you resend without changing anything.`;
+  $("#retry-split").innerHTML=`<button aria-pressed="${retrySel==="b"}" data-k="b" style="flex:${blocked.length};background:var(--declined)">${blocked.length} fail again</button><button aria-pressed="${retrySel==="o"}" data-k="o" style="flex:${ok.length};background:var(--settled)">${ok.length} safe</button>`;
+  document.querySelectorAll("#retry-split button").forEach(b=>b.onclick=()=>{retrySel=retrySel===b.dataset.k?null:b.dataset.k;renderInsights();});
+  $("#retry-chips").innerHTML = retrySel?chips(retrySel==="b"?blocked:ok):'<span class="hint">Click either side to see the reasons.</span>';
+  $("#stages").innerHTML=STAGES.map((st,i)=>`<li><button class="${st.bad?"bad":""}" aria-pressed="${i===stageSel}" data-i="${i}">${st.name}</button></li>`).join("");
+  document.querySelectorAll("#stages button").forEach(b=>b.onclick=()=>{stageSel=+b.dataset.i;renderInsights();});
+  const st=STAGES[stageSel];
+  $("#stage-panel").innerHTML=`<div class="box"><h3>What happens</h3>${st.happens}</div><div class="box"><h3>What can go wrong</h3>${st.wrong}</div><div class="box"><h3>What Settle does</h3>${st.settle}</div>`;
+}
+let tt; function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),2600)}
+function route(){
+  const v = ["#prototype","#insights"].includes(location.hash)?location.hash.slice(1):"case";
+  document.querySelectorAll(".view").forEach(el=>el.classList.toggle("on",el.id==="v-"+v));
+  document.querySelectorAll(".tabs a").forEach(a=>{ if(a.dataset.v===v) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
+  if(["#prototype","#insights","#case",""].includes(location.hash)) scrollTo(0,0);
+}
+addEventListener("hashchange",route); route(); load(); loadReasons();
+</script>
+</body>
+</html>
