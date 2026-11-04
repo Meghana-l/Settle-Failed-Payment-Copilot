@@ -29,15 +29,8 @@ Settle also checks payments **before** they go out. It warns you if a vendor's b
 
 ## How it works
 
-```mermaid
-%%{init: {"flowchart": {"htmlLabels": false, "padding": 20, "nodeSpacing": 40, "rankSpacing": 50}}}%%
-flowchart TD
-    A["A payment fails"] --> B["Settle explains it in plain English"]
-    B --> C["Who needs to act?"]
-    C -- "You" --> D["Fix it in one click"]
-    C -- "Someone else" --> E["AI drafts the message"]
-    E --> F["You review it and send"]
-```
+<img width="662" height="591" alt="Screenshot 2026-11-03 214813" src="https://github.com/user-attachments/assets/f0788b03-6d6a-4cfe-801f-a6e5fb9a1884" />
+
 
 ## What I found
 
