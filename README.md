@@ -12,27 +12,6 @@ Finance teams also get a view of which payments are at risk of failing **before*
 
 ---
 
-## Without Settle vs. with Settle
-
-```mermaid
-flowchart LR
-    subgraph WITHOUT["Without Settle"]
-        direction TB
-        A1["Payment fails"] --> A2["Bank sends a code: R03"]
-        A2 --> A3["Founder doesn't know what it means"]
-        A3 --> A4["Opens a support ticket"]
-        A4 --> A5["Vendor waits for days"]
-    end
-    subgraph WITH["With Settle"]
-        direction TB
-        B1["Payment fails"] --> B2["Plain-English reason"]
-        B2 --> B3["Who needs to act"]
-        B3 --> B4["One-click fix and a ready message"]
-        B4 --> B5["Founder fixes it on their own"]
-    end
-    style WITHOUT fill:#fbe6e4,stroke:#a8231c
-    style WITH fill:#e4f2eb,stroke:#1e7a55
-```
 
 ## What happens when a payment fails
 
