@@ -8,7 +8,7 @@ In the US, most transfers between bank accounts travel over **ACH**, the network
 
 Finance teams also get a view of which payments are at risk of failing **before** they go out.
 
-**Live demo:** _add your Vercel link here_
+**Live demo:** https://settle-tan.vercel.app/
 
 ---
 
